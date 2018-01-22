@@ -1,11 +1,19 @@
+/*
+ * Copyright (c) 2004, PostgreSQL Global Development Group
+ * See the LICENSE file in the project root for more information.
+ */
+
 package org.postgresql.test.jdbc42;
+
+import static org.junit.Assert.assertEquals;
+
+import org.postgresql.test.TestUtil;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.postgresql.test.TestUtil;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -17,8 +25,6 @@ import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.TimeZone;
-
-import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 public class UpdateObject310Test {
@@ -81,8 +87,9 @@ public class UpdateObject310Test {
       rs.next();
       assertEquals(updateDate, rs.getObject(1, updateDate.getClass()));
     } finally {
-      if (rs != null)
+      if (rs != null) {
         rs.close();
+      }
       s.close();
     }
   }

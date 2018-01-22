@@ -1717,7 +1717,7 @@ public class PgResultSet implements ResultSet, org.postgresql.PGRefCursorResultS
           //
 
           case Types.DATE:
-            if(valueObject == null || valueObject instanceof Timestamp) {
+            if (valueObject == null || valueObject instanceof Timestamp) {
               rowBuffer[columnIndex] = connection
                   .encodeString(
                       connection.getTimestampUtils().toString(
@@ -1737,7 +1737,7 @@ public class PgResultSet implements ResultSet, org.postgresql.PGRefCursorResultS
             break;
 
           case Types.TIME:
-            if(valueObject == null || valueObject instanceof Time) {
+            if (valueObject == null || valueObject instanceof Time) {
               rowBuffer[columnIndex] = connection
                   .encodeString(
                       connection.getTimestampUtils().toString(
@@ -1757,7 +1757,7 @@ public class PgResultSet implements ResultSet, org.postgresql.PGRefCursorResultS
             break;
 
           case Types.TIMESTAMP:
-            if(valueObject == null || valueObject instanceof Timestamp) {
+            if (valueObject == null || valueObject instanceof Timestamp) {
               rowBuffer[columnIndex] = connection.encodeString(
                   connection.getTimestampUtils().toString(
                       getDefaultCalendar(), (Timestamp) valueObject));
