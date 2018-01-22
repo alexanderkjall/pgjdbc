@@ -1717,23 +1717,62 @@ public class PgResultSet implements ResultSet, org.postgresql.PGRefCursorResultS
           //
 
           case Types.DATE:
-            rowBuffer[columnIndex] = connection
-                .encodeString(
+            if(valueObject == null || valueObject instanceof Timestamp) {
+              rowBuffer[columnIndex] = connection
+                  .encodeString(
+                      connection.getTimestampUtils().toString(
+                          getDefaultCalendar(), (Date) valueObject));
+
+              //#if mvn.project.property.postgresql.jdbc.spec >= "JDBC4.2"
+            } else if (valueObject instanceof LocalDate) {
+              rowBuffer[columnIndex] = connection.encodeString(
                     connection.getTimestampUtils().toString(
-                        getDefaultCalendar(), (Date) valueObject));
+                          getDefaultCalendar(), Date.valueOf((LocalDate) valueObject)));
+              //#endif
+            } else {
+              throw new PSQLException(GT.tr("conversion to {0} from {1} not supported",
+                  Types.DATE, valueObject.getClass().getName()),
+                  PSQLState.INVALID_PARAMETER_VALUE);
+            }
             break;
 
           case Types.TIME:
-            rowBuffer[columnIndex] = connection
-                .encodeString(
-                    connection.getTimestampUtils().toString(
-                        getDefaultCalendar(), (Time) valueObject));
+            if(valueObject == null || valueObject instanceof Time) {
+              rowBuffer[columnIndex] = connection
+                  .encodeString(
+                      connection.getTimestampUtils().toString(
+                          getDefaultCalendar(), (Time) valueObject));
+
+              //#if mvn.project.property.postgresql.jdbc.spec >= "JDBC4.2"
+            } else if (valueObject instanceof LocalTime) {
+              rowBuffer[columnIndex] = connection.encodeString(
+                  connection.getTimestampUtils().toString(
+                      getDefaultCalendar(), Time.valueOf((LocalTime) valueObject)));
+              //#endif
+            } else {
+              throw new PSQLException(GT.tr("conversion to {0} from {1} not supported",
+                  Types.TIME, valueObject.getClass().getName()),
+                  PSQLState.INVALID_PARAMETER_VALUE);
+            }
             break;
 
           case Types.TIMESTAMP:
-            rowBuffer[columnIndex] = connection.encodeString(
-                connection.getTimestampUtils().toString(
-                    getDefaultCalendar(), (Timestamp) valueObject));
+            if(valueObject == null || valueObject instanceof Timestamp) {
+              rowBuffer[columnIndex] = connection.encodeString(
+                  connection.getTimestampUtils().toString(
+                      getDefaultCalendar(), (Timestamp) valueObject));
+
+              //#if mvn.project.property.postgresql.jdbc.spec >= "JDBC4.2"
+            } else if (valueObject instanceof LocalDateTime) {
+              rowBuffer[columnIndex] = connection.encodeString(
+                  connection.getTimestampUtils().toString(
+                      getDefaultCalendar(), Timestamp.valueOf((LocalDateTime) valueObject)));
+              //#endif
+            } else {
+              throw new PSQLException(GT.tr("conversion to {0} from {1} not supported",
+                  Types.TIMESTAMP, valueObject.getClass().getName()),
+                  PSQLState.INVALID_PARAMETER_VALUE);
+            }
             break;
 
           case Types.NULL:
