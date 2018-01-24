@@ -1732,7 +1732,7 @@ public class PgResultSet implements ResultSet, org.postgresql.PGRefCursorResultS
             } else {
               throw new PSQLException(GT.tr("conversion to {0} from {1} not supported",
                   Types.DATE, valueObject.getClass().getName()),
-                  PSQLState.INVALID_PARAMETER_VALUE);
+                  PSQLState.DATATYPE_MISMATCH);
             }
             break;
 
@@ -1752,7 +1752,7 @@ public class PgResultSet implements ResultSet, org.postgresql.PGRefCursorResultS
             } else {
               throw new PSQLException(GT.tr("conversion to {0} from {1} not supported",
                   Types.TIME, valueObject.getClass().getName()),
-                  PSQLState.INVALID_PARAMETER_VALUE);
+                  PSQLState.DATATYPE_MISMATCH);
             }
             break;
 
@@ -1771,7 +1771,7 @@ public class PgResultSet implements ResultSet, org.postgresql.PGRefCursorResultS
             } else {
               throw new PSQLException(GT.tr("conversion to {0} from {1} not supported",
                   Types.TIMESTAMP, valueObject.getClass().getName()),
-                  PSQLState.INVALID_PARAMETER_VALUE);
+                  PSQLState.DATATYPE_MISMATCH);
             }
             break;
 
