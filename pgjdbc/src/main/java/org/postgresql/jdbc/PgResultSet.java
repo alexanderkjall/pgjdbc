@@ -1764,6 +1764,9 @@ public class PgResultSet implements ResultSet, org.postgresql.PGRefCursorResultS
             } else if (valueObject instanceof LocalDateTime) {
               rowBuffer[columnIndex] = connection.encodeString(
                   connection.getTimestampUtils().toString((LocalDateTime) valueObject));
+            } else if (valueObject instanceof OffsetDateTime) {
+              rowBuffer[columnIndex] = connection.encodeString(
+                      connection.getTimestampUtils().toString((OffsetDateTime) valueObject));
               //#endif
             } else {
               throw new PSQLException(GT.tr("conversion to {0} from {1} not supported",
