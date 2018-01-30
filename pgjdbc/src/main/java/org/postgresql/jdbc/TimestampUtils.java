@@ -20,6 +20,7 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 //#if mvn.project.property.postgresql.jdbc.spec >= "JDBC4.2"
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -757,6 +758,26 @@ public class TimestampUtils {
     sbuf.append(' ');
     appendTime(sbuf, localDateTime.toLocalTime());
     appendTimeZone(sbuf, offsetDateTime.getOffset());
+    appendEra(sbuf, localDate);
+
+    return sbuf.toString();
+  }
+
+  public synchronized String toString(Instant instant) {
+    if (Instant.MAX.equals(instant)) {
+      return "infinity";
+    } else if (Instant.MIN.equals(instant)) {
+      return "-infinity";
+    }
+
+    sbuf.setLength(0);
+
+    LocalDateTime localDateTime = instant.atOffset(ZoneOffset.UTC).toLocalDateTime();
+    LocalDate localDate = localDateTime.toLocalDate();
+    appendDate(sbuf, localDate);
+    sbuf.append(' ');
+    appendTime(sbuf, localDateTime.toLocalTime());
+    appendTimeZone(sbuf, ZoneOffset.UTC);
     appendEra(sbuf, localDate);
 
     return sbuf.toString();

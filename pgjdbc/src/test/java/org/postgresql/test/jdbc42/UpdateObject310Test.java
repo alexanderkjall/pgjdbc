@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -40,6 +41,7 @@ public class UpdateObject310Test {
     return Arrays.asList(new Object[][]{
         {LocalDateTime.of(2017, 1, 2, 3, 4, 5, 6000).truncatedTo(ChronoUnit.MICROS), "timestamp_without_time_zone_column", "'2003-01-01'::TIMESTAMP"},
         {OffsetDateTime.of(2017, 1, 2, 3, 4, 5, 6000, ZoneOffset.UTC).truncatedTo(ChronoUnit.MICROS), "timestamp_with_time_zone_column", "'2007-06-03'::TIMESTAMP"},
+        {Instant.ofEpochSecond(1517341246), "another_timestamp_with_time_zone_column", "'2007-06-03'::TIMESTAMP"},
         {LocalDate.of(2017, 1, 2), "date_column", "'2003-01-01'::DATE"},
         {LocalTime.of(11, 12, 13).truncatedTo(ChronoUnit.MICROS), "time_without_time_zone_column", "'07:23'::TIME WITHOUT TIME ZONE"}
     });
@@ -50,6 +52,7 @@ public class UpdateObject310Test {
     con = TestUtil.openDB();
     TestUtil.createTableWithPrimaryKey(con, "table1", "timestamp_without_time_zone_column timestamp without time zone,"
         + "timestamp_with_time_zone_column timestamp with time zone,"
+        + "another_timestamp_with_time_zone_column timestamp with time zone,"
         + "date_column date,"
         + "time_without_time_zone_column time without time zone"
     );

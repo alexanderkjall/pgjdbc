@@ -55,6 +55,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 //#if mvn.project.property.postgresql.jdbc.spec >= "JDBC4.2"
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -1767,6 +1768,9 @@ public class PgResultSet implements ResultSet, org.postgresql.PGRefCursorResultS
             } else if (valueObject instanceof OffsetDateTime) {
               rowBuffer[columnIndex] = connection.encodeString(
                       connection.getTimestampUtils().toString((OffsetDateTime) valueObject));
+            } else if (valueObject instanceof Instant) {
+              rowBuffer[columnIndex] = connection.encodeString(
+                      connection.getTimestampUtils().toString((Instant) valueObject));
               //#endif
             } else {
               throw new PSQLException(GT.tr("conversion to {0} from {1} not supported",
@@ -3444,6 +3448,26 @@ public class PgResultSet implements ResultSet, org.postgresql.PGRefCursorResultS
         // Postgres stores everything in UTC and does not keep original time zone
         OffsetDateTime offsetDateTime = OffsetDateTime.ofInstant(timestampValue.toInstant(), ZoneOffset.UTC);
         return type.cast(offsetDateTime);
+      } else {
+        throw new PSQLException(GT.tr("conversion to {0} from {1} not supported", type, sqlType),
+                PSQLState.INVALID_PARAMETER_VALUE);
+      }
+    } else if (type == Instant.class) {
+      if (sqlType == Types.TIMESTAMP_WITH_TIMEZONE || sqlType == Types.TIMESTAMP) {
+        Timestamp timestampValue = getTimestamp(columnIndex);
+        if (wasNull()) {
+          return null;
+        }
+        long time = timestampValue.getTime();
+        if (time == PGStatement.DATE_POSITIVE_INFINITY) {
+          return type.cast(Instant.MAX);
+        }
+        if (time == PGStatement.DATE_NEGATIVE_INFINITY) {
+          return type.cast(Instant.MIN);
+        }
+        // Postgres stores everything in UTC and does not keep original time zone
+        Instant instant = timestampValue.toInstant();
+        return type.cast(instant);
       } else {
         throw new PSQLException(GT.tr("conversion to {0} from {1} not supported", type, sqlType),
                 PSQLState.INVALID_PARAMETER_VALUE);

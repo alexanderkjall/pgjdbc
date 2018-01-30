@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Types;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -205,6 +206,27 @@ public class SetObject310Test {
     }
   }
 
+  /**
+   * Test the behavior of setObject for timestamp columns.
+   */
+  @Test
+  public void testSetInstant() throws SQLException {
+    List<String> zoneIdsToTest = getZoneIdsToTest();
+    List<TimeZone> storeZones = new ArrayList<>();
+    for (String zoneId : zoneIdsToTest) {
+      storeZones.add(TimeZone.getTimeZone(zoneId));
+    }
+    List<String> datesToTest = getDatesToTest();
+
+    for (TimeZone timeZone : storeZones) {
+      ZoneId zoneId = timeZone.toZoneId();
+      for (String date : datesToTest) {
+        Instant instant = Instant.parse(date + "Z");
+        instants(zoneId, instant, storeZones);
+      }
+    }
+  }
+
   private List<String> getDatesToTest() {
     return Arrays.asList("2015-09-03T12:00:00", "2015-06-30T23:59:58",
             "1997-06-30T23:59:59", "1997-07-01T00:00:00", "2012-06-30T23:59:59", "2012-07-01T00:00:00",
@@ -272,6 +294,33 @@ public class SetObject310Test {
           OffsetDateTime withTypeRes = OffsetDateTime.parse(withType.replace(' ', 'T') + ":00");
           assertEquals(
               "OffsetDateTime=" + data + " (with ZoneId=" + dataZone + "), with TimeZone.default="
+                  + storeZone + ", setObject(int, Object, TIMESTAMP_WITH_TIMEZONE)",
+              data.toInstant(), withTypeRes.toInstant());
+        }
+      }
+    }
+  }
+
+  private void instants(ZoneId dataZone, Instant instant, List<TimeZone> storeZones) throws SQLException {
+    OffsetDateTime data = instant.atZone(dataZone).toOffsetDateTime();
+    try (PreparedStatement ps = con.prepareStatement(
+        "select ?::timestamp with time zone, ?::timestamp with time zone")) {
+      for (TimeZone storeZone : storeZones) {
+        TimeZone.setDefault(storeZone);
+        ps.setObject(1, data);
+        ps.setObject(2, data, Types.TIMESTAMP_WITH_TIMEZONE);
+        try (ResultSet rs = ps.executeQuery()) {
+          rs.next();
+          String noType = rs.getString(1);
+          OffsetDateTime noTypeRes = OffsetDateTime.parse(noType.replace(' ', 'T') + ":00");
+          assertEquals(
+              "Instant=" + data + " (with ZoneId=" + dataZone + "), with TimeZone.default="
+                  + storeZone + ", setObject(int, Object)", data.toInstant(),
+              noTypeRes.toInstant());
+          String withType = rs.getString(1);
+          OffsetDateTime withTypeRes = OffsetDateTime.parse(withType.replace(' ', 'T') + ":00");
+          assertEquals(
+              "Instant=" + data + " (with ZoneId=" + dataZone + "), with TimeZone.default="
                   + storeZone + ", setObject(int, Object, TIMESTAMP_WITH_TIMEZONE)",
               data.toInstant(), withTypeRes.toInstant());
         }

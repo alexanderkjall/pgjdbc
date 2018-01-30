@@ -56,6 +56,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 //#if mvn.project.property.postgresql.jdbc.spec >= "JDBC4.2"
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -601,6 +602,9 @@ class PgPreparedStatement extends PgStatement implements PreparedStatement {
           } else if (in instanceof LocalDateTime) {
             setTimestamp(parameterIndex, (LocalDateTime) in);
             break;
+          } else if (in instanceof Instant) {
+            setTimestamp(parameterIndex, (Instant) in);
+            break;
             //#endif
           } else {
             tmpts = connection.getTimestampUtils().toTimestamp(getDefaultCalendar(), in.toString());
@@ -955,6 +959,8 @@ class PgPreparedStatement extends PgStatement implements PreparedStatement {
       setTimestamp(parameterIndex, (LocalDateTime) x);
     } else if (x instanceof OffsetDateTime) {
       setTimestamp(parameterIndex, (OffsetDateTime) x);
+    } else if (x instanceof Instant) {
+      setTimestamp(parameterIndex, (Instant) x);
       //#endif
     } else if (x instanceof Map) {
       setMap(parameterIndex, (Map<?, ?>) x);
@@ -1384,6 +1390,11 @@ class PgPreparedStatement extends PgStatement implements PreparedStatement {
   private void setTimestamp(int i, LocalDateTime localDateTime) throws SQLException {
     int oid = Oid.TIMESTAMP;
     bindString(i, connection.getTimestampUtils().toString(localDateTime), oid);
+  }
+
+  private void setTimestamp(int i, Instant instant) throws SQLException {
+    int oid = Oid.TIMESTAMPTZ;
+    bindString(i, connection.getTimestampUtils().toString(instant), oid);
   }
 
   private void setTimestamp(int i, OffsetDateTime offsetDateTime) throws SQLException {

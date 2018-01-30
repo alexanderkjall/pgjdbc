@@ -22,6 +22,7 @@ import org.junit.runners.Parameterized;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -247,6 +248,39 @@ public class GetObject310Test extends BaseTest4 {
         OffsetDateTime offsetDateTime = localDateTime.atOffset(offset).withOffsetSameInstant(ZoneOffset.UTC);
         assertEquals(offsetDateTime, rs.getObject("timestamp_with_time_zone_column", OffsetDateTime.class));
         assertEquals(offsetDateTime, rs.getObject(1, OffsetDateTime.class));
+      } finally {
+        rs.close();
+      }
+      stmt.executeUpdate("DELETE FROM table1");
+    } finally {
+      stmt.close();
+    }
+  }
+
+
+  /**
+   * Test the behavior getObject for timestamp with time zone columns.
+   */
+  @Test
+  public void testGetTimestampWithTimeZoneAsInstant() throws SQLException {
+    runGetInstant(UTC);
+    runGetInstant(GMT03);
+    runGetInstant(GMT05);
+    runGetInstant(GMT13);
+  }
+
+  private void runGetInstant(ZoneOffset offset) throws SQLException {
+    Statement stmt = con.createStatement();
+    try {
+      stmt.executeUpdate(TestUtil.insertSQL("table1","timestamp_with_time_zone_column","TIMESTAMP WITH TIME ZONE '2018-01-30 21:45:24.000000" + offset.toString() + "'"));
+
+      ResultSet rs = stmt.executeQuery(TestUtil.selectSQL("table1", "timestamp_with_time_zone_column"));
+      try {
+        assertTrue(rs.next());
+        Instant instant = Instant.ofEpochSecond(1517348724 - offset.getTotalSeconds());
+
+        assertEquals("test failed in Offset " + offset, instant, rs.getObject("timestamp_with_time_zone_column", Instant.class));
+        assertEquals("test failed in Offset " + offset, instant, rs.getObject(1, Instant.class));
       } finally {
         rs.close();
       }
