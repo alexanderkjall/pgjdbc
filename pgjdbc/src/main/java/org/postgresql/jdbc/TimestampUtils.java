@@ -47,6 +47,9 @@ public class TimestampUtils {
   private static final int ONEDAY = 24 * 3600 * 1000;
   private static final char[] ZEROS = {'0', '0', '0', '0', '0', '0', '0', '0', '0'};
   private static final char[][] NUMBERS;
+  private static final String[] NUMBERS_STRING;
+  private static final String leadingZerosYear[] = {"000", "00", "0", "", "", "", "", "", ""};
+  private static final String leadingZerosNano[] = {"00000", "0000", "000", "00", "0", "", "", "", ""};
   private static final HashMap<String, TimeZone> GMT_ZONES = new HashMap<String, TimeZone>();
 
   private static final Field DEFAULT_TIME_ZONE_FIELD;
@@ -59,6 +62,10 @@ public class TimestampUtils {
     NUMBERS = new char[64][];
     for (int i = 0; i < NUMBERS.length; i++) {
       NUMBERS[i] = ((i < 10 ? "0" : "") + Integer.toString(i)).toCharArray();
+    }
+    NUMBERS_STRING = new String[64];
+    for (int i = 0; i < NUMBERS_STRING.length; i++) {
+      NUMBERS_STRING[i] = ((i < 10 ? "0" : "") + Integer.toString(i));
     }
 
     // Backend's gmt-3 means GMT+03 in Java. Here a map is created so gmt-3 can be converted to
@@ -742,7 +749,7 @@ public class TimestampUtils {
   }
 
 
-  public synchronized String toString(OffsetDateTime offsetDateTime) {
+  public String toString(OffsetDateTime offsetDateTime) {
     if (OffsetDateTime.MAX.equals(offsetDateTime)) {
       return "infinity";
     } else if (OffsetDateTime.MIN.equals(offsetDateTime)) {
@@ -751,22 +758,31 @@ public class TimestampUtils {
 
     sbuf.setLength(0);
 
-    LocalDateTime localDateTime = offsetDateTime.toLocalDateTime();
-    LocalDate localDate = localDateTime.toLocalDate();
-    appendDate(sbuf, localDate);
-    sbuf.append(' ');
-    appendTime(sbuf, localDateTime.toLocalTime());
-    appendTimeZone(sbuf, offsetDateTime.getOffset());
-    appendEra(sbuf, localDate);
+    int year = Math.abs(offsetDateTime.getYear()); // year is negative for BC dates
+    int month = offsetDateTime.getMonthValue();
+    int day = offsetDateTime.getDayOfMonth();
 
-    return sbuf.toString();
+    LocalTime localTime = offsetDateTime.toLocalTime();
+    int hours = localTime.getHour();
+    int minutes = localTime.getMinute();
+    int seconds = localTime.getSecond();
+    int nanos = localTime.getNano();
+
+    if (nanos == 0) {
+      return leadingZerosYear[(int) Math.log10(year)] + year + "-" + NUMBERS_STRING[month] + "-" + NUMBERS_STRING[day] + " " +
+              NUMBERS_STRING[hours] + ":" + NUMBERS_STRING[minutes] + ":" + NUMBERS_STRING[seconds];
+    } else {
+      return leadingZerosYear[(int) Math.log10(year / 10)] + year + "-" + NUMBERS_STRING[month] + "-" + NUMBERS_STRING[day] + " " +
+              NUMBERS_STRING[hours] + ":" + NUMBERS_STRING[minutes] + ":" + NUMBERS_STRING[seconds] + "." +
+              leadingZerosNano[(int) Math.log10(nanos / 1000)] + nanos / 1000;
+    }
   }
 
   /**
    * Formats {@link LocalDateTime} to be sent to the backend, thus it adds time zone.
    * Do not use this method in {@link java.sql.ResultSet#getString(int)}
    */
-  public synchronized String toString(LocalDateTime localDateTime) {
+  public String toString(LocalDateTime localDateTime) {
     if (LocalDateTime.MAX.equals(localDateTime)) {
       return "infinity";
     } else if (LocalDateTime.MIN.equals(localDateTime)) {
