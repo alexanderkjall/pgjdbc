@@ -48,7 +48,7 @@ public class TimestampUtils {
   private static final char[] ZEROS = {'0', '0', '0', '0', '0', '0', '0', '0', '0'};
   private static final char[][] NUMBERS;
   private static final String[] NUMBERS_STRING;
-  private static final String leadingZerosYear[] = {"000", "00", "0", "", "", "", "", "", ""};
+  private static final String leadingZerosYear[] = {"000", "00", "0", "", "", "", "", "", "", ""};
   private static final String leadingZerosNano[] = {"00000", "0000", "000", "00", "0", "", "", "", ""};
   private static final HashMap<String, TimeZone> GMT_ZONES = new HashMap<String, TimeZone>();
 
@@ -749,32 +749,40 @@ public class TimestampUtils {
   }
 
 
-  public String toString(OffsetDateTime offsetDateTime) {
+  public static String toString(OffsetDateTime offsetDateTime) {
     if (OffsetDateTime.MAX.equals(offsetDateTime)) {
       return "infinity";
     } else if (OffsetDateTime.MIN.equals(offsetDateTime)) {
       return "-infinity";
     }
 
-    sbuf.setLength(0);
-
     int year = Math.abs(offsetDateTime.getYear()); // year is negative for BC dates
     int month = offsetDateTime.getMonthValue();
     int day = offsetDateTime.getDayOfMonth();
 
-    LocalTime localTime = offsetDateTime.toLocalTime();
-    int hours = localTime.getHour();
-    int minutes = localTime.getMinute();
-    int seconds = localTime.getSecond();
-    int nanos = localTime.getNano();
+    int hours = offsetDateTime.getHour();
+    int minutes = offsetDateTime.getMinute();
+    int seconds = offsetDateTime.getSecond();
+    int nanos = offsetDateTime.getNano();
 
-    if (nanos == 0) {
-      return leadingZerosYear[(int) Math.log10(year)] + year + "-" + NUMBERS_STRING[month] + "-" + NUMBERS_STRING[day] + " " +
-              NUMBERS_STRING[hours] + ":" + NUMBERS_STRING[minutes] + ":" + NUMBERS_STRING[seconds];
+    if (offsetDateTime.get(ChronoField.ERA) != IsoEra.BCE.getValue()) {
+      if (nanos == 0) {
+        return leadingZerosYear[(int) Math.log10(year / 10)] + year + "-" + NUMBERS_STRING[month] + "-" + NUMBERS_STRING[day] + " " +
+            NUMBERS_STRING[hours] + ":" + NUMBERS_STRING[minutes] + ":" + NUMBERS_STRING[seconds];
+      } else {
+        return leadingZerosYear[(int) Math.log10(year / 10)] + year + "-" + NUMBERS_STRING[month] + "-" + NUMBERS_STRING[day] + " " +
+            NUMBERS_STRING[hours] + ":" + NUMBERS_STRING[minutes] + ":" + NUMBERS_STRING[seconds] + "." +
+                leadingZerosNano[(int) Math.log10(nanos / 1000)] + nanos / 1000;
+      }
     } else {
-      return leadingZerosYear[(int) Math.log10(year / 10)] + year + "-" + NUMBERS_STRING[month] + "-" + NUMBERS_STRING[day] + " " +
-              NUMBERS_STRING[hours] + ":" + NUMBERS_STRING[minutes] + ":" + NUMBERS_STRING[seconds] + "." +
-              leadingZerosNano[(int) Math.log10(nanos / 1000)] + nanos / 1000;
+      if (nanos == 0) {
+        return leadingZerosYear[(int) Math.log10(year / 10)] + year + "-" + NUMBERS_STRING[month] + "-" + NUMBERS_STRING[day] + " " +
+            NUMBERS_STRING[hours] + ":" + NUMBERS_STRING[minutes] + ":" + NUMBERS_STRING[seconds] + " BC";
+      } else {
+        return leadingZerosYear[(int) Math.log10(year / 10)] + year + "-" + NUMBERS_STRING[month] + "-" + NUMBERS_STRING[day] + " " +
+            NUMBERS_STRING[hours] + ":" + NUMBERS_STRING[minutes] + ":" + NUMBERS_STRING[seconds] + "." +
+                leadingZerosNano[(int) Math.log10(nanos / 1000)] + nanos / 1000 + " BC";
+      }
     }
   }
 

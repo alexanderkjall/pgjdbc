@@ -1388,7 +1388,7 @@ class PgPreparedStatement extends PgStatement implements PreparedStatement {
 
   private void setTimestamp(int i, OffsetDateTime offsetDateTime) throws SQLException {
     int oid = Oid.TIMESTAMPTZ;
-    bindString(i, connection.getTimestampUtils().toString(offsetDateTime), oid);
+    bindString(i, TimestampUtils.toString(offsetDateTime), oid);
   }
   //#endif
 
