@@ -109,7 +109,7 @@ public class TimestampUtils {
     DEFAULT_TIME_ZONE_FIELD = tzField;
   }
 
-  private final StringBuilder sbuf = new StringBuilder();
+  private final ThreadLocal<StringBuilder> sbuf = new ThreadLocal<>();
 
   // This calendar is used when user provides calendar in setX(, Calendar) method.
   // It ensures calendar is Gregorian.
@@ -128,6 +128,15 @@ public class TimestampUtils {
   public TimestampUtils(boolean usesDouble, Provider<TimeZone> timeZoneProvider) {
     this.usesDouble = usesDouble;
     this.timeZoneProvider = timeZoneProvider;
+  }
+
+  private StringBuilder getSbuf() {
+    StringBuilder localSbuf = sbuf.get();
+    if (localSbuf == null) {
+      localSbuf = new StringBuilder();
+      sbuf.set(localSbuf);
+    }
+    return localSbuf;
   }
 
   private Calendar getCalendar(int sign, int hr, int min, int sec) {
@@ -372,7 +381,7 @@ public class TimestampUtils {
    * @return null if s is null or a timestamp of the parsed string s.
    * @throws SQLException if there is a problem parsing s.
    */
-  public synchronized @PolyNull Timestamp toTimestamp(@Nullable Calendar cal,
+  public @PolyNull Timestamp toTimestamp(@Nullable Calendar cal,
       @PolyNull String s) throws SQLException {
     if (s == null) {
       return null;
@@ -543,7 +552,7 @@ public class TimestampUtils {
     return java.time.OffsetDateTime.ofInstant(instant, java.time.ZoneOffset.UTC);
   }
 
-  public synchronized @PolyNull Time toTime(
+  public @PolyNull Time toTime(
       @Nullable Calendar cal, @PolyNull String s) throws SQLException {
     // 1) Parse backend string
     if (s == null) {
@@ -587,7 +596,7 @@ public class TimestampUtils {
     return convertToTime(timeMillis, useCal.getTimeZone());
   }
 
-  public synchronized @PolyNull Date toDate(@Nullable Calendar cal,
+  public @PolyNull Date toDate(@Nullable Calendar cal,
       @PolyNull String s) throws SQLException {
     // 1) Parse backend string
     Timestamp timestamp = toTimestamp(cal, s);
@@ -631,11 +640,11 @@ public class TimestampUtils {
     return nanos % 1000 > 499;
   }
 
-  public synchronized String toString(@Nullable Calendar cal, Timestamp x) {
+  public String toString(@Nullable Calendar cal, Timestamp x) {
     return toString(cal, x, true);
   }
 
-  public synchronized String toString(@Nullable Calendar cal, Timestamp x,
+  public String toString(@Nullable Calendar cal, Timestamp x,
       boolean withTimeZone) {
     if (x.getTime() == PGStatement.DATE_POSITIVE_INFINITY) {
       return "infinity";
@@ -659,24 +668,25 @@ public class TimestampUtils {
     }
     cal.setTimeInMillis(timeMillis);
 
-    sbuf.setLength(0);
+    StringBuilder localSbuf = getSbuf();
+    localSbuf.setLength(0);
 
-    appendDate(sbuf, cal);
-    sbuf.append(' ');
-    appendTime(sbuf, cal, nanos);
+    appendDate(localSbuf, cal);
+    localSbuf.append(' ');
+    appendTime(localSbuf, cal, nanos);
     if (withTimeZone) {
-      appendTimeZone(sbuf, cal);
+      appendTimeZone(localSbuf, cal);
     }
-    appendEra(sbuf, cal);
+    appendEra(localSbuf, cal);
 
-    return sbuf.toString();
+    return localSbuf.toString();
   }
 
-  public synchronized String toString(@Nullable Calendar cal, Date x) {
+  public String toString(@Nullable Calendar cal, Date x) {
     return toString(cal, x, true);
   }
 
-  public synchronized String toString(@Nullable Calendar cal, Date x,
+  public String toString(@Nullable Calendar cal, Date x,
       boolean withTimeZone) {
     if (x.getTime() == PGStatement.DATE_POSITIVE_INFINITY) {
       return "infinity";
@@ -687,37 +697,39 @@ public class TimestampUtils {
     cal = setupCalendar(cal);
     cal.setTime(x);
 
-    sbuf.setLength(0);
+    StringBuilder localSbuf = getSbuf();
+    localSbuf.setLength(0);
 
-    appendDate(sbuf, cal);
-    appendEra(sbuf, cal);
+    appendDate(localSbuf, cal);
+    appendEra(localSbuf, cal);
     if (withTimeZone) {
-      sbuf.append(' ');
-      appendTimeZone(sbuf, cal);
+      localSbuf.append(' ');
+      appendTimeZone(localSbuf, cal);
     }
 
-    return sbuf.toString();
+    return localSbuf.toString();
   }
 
-  public synchronized String toString(@Nullable Calendar cal, Time x) {
+  public String toString(@Nullable Calendar cal, Time x) {
     return toString(cal, x, true);
   }
 
-  public synchronized String toString(@Nullable Calendar cal, Time x,
+  public String toString(@Nullable Calendar cal, Time x,
       boolean withTimeZone) {
     cal = setupCalendar(cal);
     cal.setTime(x);
 
-    sbuf.setLength(0);
+    StringBuilder localSbuf = getSbuf();
+    localSbuf.setLength(0);
 
-    appendTime(sbuf, cal, cal.get(Calendar.MILLISECOND) * 1000000);
+    appendTime(localSbuf, cal, cal.get(Calendar.MILLISECOND) * 1000000);
 
     // The 'time' parser for <= 7.3 doesn't like timezones.
     if (withTimeZone) {
-      appendTimeZone(sbuf, cal);
+      appendTimeZone(localSbuf, cal);
     }
 
-    return sbuf.toString();
+    return localSbuf.toString();
   }
 
   private static void appendDate(StringBuilder sb, Calendar cal) {
@@ -828,24 +840,26 @@ public class TimestampUtils {
     }
   }
 
-  public synchronized String toString(java.time.LocalDate localDate) {
+  public String toString(java.time.LocalDate localDate) {
     if (java.time.LocalDate.MAX.equals(localDate)) {
       return "infinity";
     } else if (localDate.isBefore(MIN_LOCAL_DATE)) {
       return "-infinity";
     }
 
-    sbuf.setLength(0);
+    StringBuilder localSbuf = getSbuf();
+    localSbuf.setLength(0);
 
-    appendDate(sbuf, localDate);
-    appendEra(sbuf, localDate);
+    appendDate(localSbuf, localDate);
+    appendEra(localSbuf, localDate);
 
-    return sbuf.toString();
+    return localSbuf.toString();
   }
 
-  public synchronized String toString(java.time.LocalTime localTime) {
+  public String toString(java.time.LocalTime localTime) {
 
-    sbuf.setLength(0);
+    StringBuilder localSbuf = getSbuf();
+    localSbuf.setLength(0);
 
     if (localTime.isAfter(MAX_TIME)) {
       return "24:00:00";
@@ -857,19 +871,20 @@ public class TimestampUtils {
       // it relies on the fact that appendTime just truncates 000..999 nanosecond part
       localTime = localTime.plus(ONE_MICROSECOND);
     }
-    appendTime(sbuf, localTime);
+    appendTime(localSbuf, localTime);
 
-    return sbuf.toString();
+    return localSbuf.toString();
   }
 
-  public synchronized String toString(java.time.OffsetDateTime offsetDateTime) {
+  public String toString(java.time.OffsetDateTime offsetDateTime) {
     if (offsetDateTime.isAfter(MAX_OFFSET_DATETIME)) {
       return "infinity";
     } else if (offsetDateTime.isBefore(MIN_OFFSET_DATETIME)) {
       return "-infinity";
     }
 
-    sbuf.setLength(0);
+    StringBuilder localSbuf = getSbuf();
+    localSbuf.setLength(0);
 
     int nano = offsetDateTime.getNano();
     if (nanosExceed499(nano)) {
@@ -879,13 +894,13 @@ public class TimestampUtils {
     }
     java.time.LocalDateTime localDateTime = offsetDateTime.toLocalDateTime();
     java.time.LocalDate localDate = localDateTime.toLocalDate();
-    appendDate(sbuf, localDate);
-    sbuf.append(' ');
-    appendTime(sbuf, localDateTime.toLocalTime());
-    appendTimeZone(sbuf, offsetDateTime.getOffset());
-    appendEra(sbuf, localDate);
+    appendDate(localSbuf, localDate);
+    localSbuf.append(' ');
+    appendTime(localSbuf, localDateTime.toLocalTime());
+    appendTimeZone(localSbuf, offsetDateTime.getOffset());
+    appendEra(localSbuf, localDate);
 
-    return sbuf.toString();
+    return localSbuf.toString();
   }
 
   /**
@@ -894,7 +909,7 @@ public class TimestampUtils {
    * @param localDateTime The local date to format as a String
    * @return The formatted local date
    */
-  public synchronized String toString(java.time.LocalDateTime localDateTime) {
+  public String toString(java.time.LocalDateTime localDateTime) {
     if (localDateTime.isAfter(MAX_LOCAL_DATETIME)) {
       return "infinity";
     } else if (localDateTime.isBefore(MIN_LOCAL_DATETIME)) {
